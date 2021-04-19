@@ -17,8 +17,8 @@ const ENABLE_NOTIFICATION = 1;
 /* ========================================== */
 /* [Users] Do not edit code below this line   */
 /* ========================================== */
-const AUTHOR_ID = "01daa187-ff5e-46aa-ac3f-d4c529a8c012";
-const SCRIPT_NAME = "Change Costume, Background, Pet, and Mount";
+const AUTHOR_ID = "6ee1f819-036a-4977-94bd-22cae427bd43";
+const SCRIPT_NAME = "Change Equipment";
 const HEADERS = {
   "x-client" : AUTHOR_ID + "-" + SCRIPT_NAME,
   "x-api-user" : USER_ID,
@@ -40,19 +40,19 @@ const FAIL_RETRY_NOW_MESSAGE = "**ERROR: Script Failed. Retry now.**  \n\n"
 
 const scriptProperties = PropertiesService.getScriptProperties(); // Constants can have properties changed
 
-const SAVE_STRING = "Save appearance";
-const LOAD_STRING = "Load appearance";
+const SAVE_STRING = "Save equipment set";
+const LOAD_STRING = "Load equipment set";
 
 var scriptLocked = Number(scriptProperties.getProperty("scriptLocked"));
 var copiedUserPropToScriptProp = Number(scriptProperties.getProperty("copiedUserPropToScriptProp"));
 
 var user = 0;
-var weaponKey, shieldKey, headKey, armorKey, headAccessoryKey, eyewearKey, bodyKey, backKey, backgroundKey, currentPetKey, currentMountKey;
+var weaponKey, shieldKey, headKey, armorKey, headAccessoryKey, eyewearKey, bodyKey, backKey;
 
 function doOneTimeSetup() {
   if (!scriptLocked) {
     // Get response from repeatable function to see remaining requests
-    const response = api_changeEnableCostume(true);
+    const response = api_createWebhook();
     const respHeaders = response.getAllHeaders();
     const remainingReq = Number(respHeaders["x-ratelimit-remaining"]);
     const resetDateTime = new Date(respHeaders["x-ratelimit-reset"]);
@@ -71,7 +71,7 @@ function doOneTimeSetup() {
     }
     // Else check requests needed
     else {
-      const requestsNeeded = 2;
+      const requestsNeeded = 1;
 
       // If remaining requests not enough, send message now to retry after waiting
       if (remainingReq < requestsNeeded) {
@@ -79,7 +79,6 @@ function doOneTimeSetup() {
       }
       // Else, continue with normal operation
       else {
-        api_createWebhook();
         api_createRewardTasks();
       }
     }
@@ -106,23 +105,6 @@ function doPost(e) {
   }
 
   return HtmlService.createHtmlOutput();
-}
-
-function api_changeEnableCostume(value) {
-  const payload = {
-    "preferences.costume" : value,
-  }
-  
-  const params = {
-    "method" : "put",
-    "headers" : HEADERS,
-    "contentType" : "application/json",
-    "payload" : JSON.stringify(payload),
-    "muteHttpExceptions" : true,
-  }
-  
-  const url = "https://habitica.com/api/v3/user";
-  return UrlFetchApp.fetch(url, params);
 }
 
 function api_sendFailRetryNowMessageAndUnlockScript() {
@@ -169,23 +151,21 @@ function api_createWebhook() {
 }
 
 function api_createRewardTasks() {
-  const payloadL1 = {"text" : LOAD_STRING, "type" : "reward", "notes" : "1",}
-  const payloadL2 = {"text" : LOAD_STRING, "type" : "reward", "notes" : "2",}
-  const payloadL3 = {"text" : LOAD_STRING, "type" : "reward", "notes" : "3",}
-  const payloadL4 = {"text" : LOAD_STRING, "type" : "reward", "notes" : "4",}
-  const payloadL5 = {"text" : LOAD_STRING, "type" : "reward", "notes" : "5",}
+  const payloadL1 = {"text" : LOAD_STRING, "type" : "reward", "notes" : "STR",}
+  const payloadL2 = {"text" : LOAD_STRING, "type" : "reward", "notes" : "INT",}
+  const payloadL3 = {"text" : LOAD_STRING, "type" : "reward", "notes" : "CON",}
+  const payloadL4 = {"text" : LOAD_STRING, "type" : "reward", "notes" : "PER",}
 
-  const payloadS1 = {"text" : SAVE_STRING, "type" : "reward", "notes" : "1",}
-  const payloadS2 = {"text" : SAVE_STRING, "type" : "reward", "notes" : "2",}
-  const payloadS3 = {"text" : SAVE_STRING, "type" : "reward", "notes" : "3",}
-  const payloadS4 = {"text" : SAVE_STRING, "type" : "reward", "notes" : "4",}
-  const payloadS5 = {"text" : SAVE_STRING, "type" : "reward", "notes" : "5",}
+  const payloadS1 = {"text" : SAVE_STRING, "type" : "reward", "notes" : "STR",}
+  const payloadS2 = {"text" : SAVE_STRING, "type" : "reward", "notes" : "INT",}
+  const payloadS3 = {"text" : SAVE_STRING, "type" : "reward", "notes" : "CON",}
+  const payloadS4 = {"text" : SAVE_STRING, "type" : "reward", "notes" : "PER",}
 
   const params = {
     "method" : "post",
     "headers" : HEADERS,
     "contentType" : "application/json",
-    "payload" : JSON.stringify([payloadS5, payloadS4, payloadS3, payloadS2, payloadS1, payloadL5, payloadL4, payloadL3, payloadL2, payloadL1]),
+    "payload" : JSON.stringify([payloadS4, payloadS3, payloadS2, payloadS1, payloadL4, payloadL3, payloadL2, payloadL1]),
     "muteHttpExceptions" : true,
   }
 
@@ -204,24 +184,21 @@ function deleteTriggers(functionName) {
   }
 }
 
-function createKeyNames(suffix) {
-  weaponKey = "weapon_" + suffix;
-  shieldKey = "shield_" + suffix;
-  headKey = "head_" + suffix;
-  armorKey = "armor_" + suffix;
-  headAccessoryKey = "headAccessory_" + suffix;
-  eyewearKey = "eyewear_" + suffix;
-  bodyKey = "body_" + suffix;
-  backKey = "back_" + suffix;
-  backgroundKey = "background_" + suffix;
-  currentPetKey = "currentPet_" + suffix;
-  currentMountKey = "currentMount_" + suffix;
+function createKeyNames(prefix) {
+  weaponKey = "myset_" + prefix + "_weapon";
+  shieldKey = "myset_" + prefix + "_shield";
+  headKey = "myset_" + prefix + "_head";
+  armorKey = "myset_" + prefix + "_armor";
+  headAccessoryKey = "myset_" + prefix + "_headAccessory";
+  eyewearKey = "myset_" + prefix + "_eyewear";
+  bodyKey = "myset_" + prefix + "_body";
+  backKey = "myset_" + prefix + "_back";
 }
 
 function doSaveButtonActions(taskNotes) {
   // Get response from repeatable function to see remaining requests
-  // - Get present appearance info
-  const response = api_getUserInfo("items.gear.costume,items.currentPet,items.currentMount,preferences.background");
+  // - Get present equipment info
+  const response = api_getUserInfo("items.gear.equipped");
   const respHeaders = response.getAllHeaders();
   const remainingReq = Number(respHeaders["x-ratelimit-remaining"]);
   const resetDateTime = new Date(respHeaders["x-ratelimit-reset"]);
@@ -250,18 +227,15 @@ function doSaveButtonActions(taskNotes) {
     else {
       sanitizeItemValues();
       
-      // Remember present appearance as appearance N
-      scriptProperties.setProperty(weaponKey, user.items.gear.costume.weapon);
-      scriptProperties.setProperty(shieldKey, user.items.gear.costume.shield);
-      scriptProperties.setProperty(headKey, user.items.gear.costume.head);
-      scriptProperties.setProperty(armorKey, user.items.gear.costume.armor);
-      scriptProperties.setProperty(headAccessoryKey, user.items.gear.costume.headAccessory);
-      scriptProperties.setProperty(eyewearKey, user.items.gear.costume.eyewear);
-      scriptProperties.setProperty(bodyKey, user.items.gear.costume.body);
-      scriptProperties.setProperty(backKey, user.items.gear.costume.back);
-      scriptProperties.setProperty(backgroundKey, user.preferences.background);
-      scriptProperties.setProperty(currentPetKey, user.items.currentPet);
-      scriptProperties.setProperty(currentMountKey, user.items.currentMount);
+      // Remember present equipment as myset_N
+      scriptProperties.setProperty(weaponKey, user.items.gear.equipped.weapon);
+      scriptProperties.setProperty(shieldKey, user.items.gear.equipped.shield);
+      scriptProperties.setProperty(headKey, user.items.gear.equipped.head);
+      scriptProperties.setProperty(armorKey, user.items.gear.equipped.armor);
+      scriptProperties.setProperty(headAccessoryKey, user.items.gear.equipped.headAccessory);
+      scriptProperties.setProperty(eyewearKey, user.items.gear.equipped.eyewear);
+      scriptProperties.setProperty(bodyKey, user.items.gear.equipped.body);
+      scriptProperties.setProperty(backKey, user.items.gear.equipped.back);
       
       // Send confirmation PM if enabled
       if (ENABLE_NOTIFICATION) {
@@ -273,8 +247,8 @@ function doSaveButtonActions(taskNotes) {
 
 function doLoadButtonActions(taskNotes) {
   // Get response from repeatable function to see remaining requests
-  // - Get present appearance info (to be able to unequip if needed)
-  const response = api_getUserInfo("items.gear.costume,items.currentPet,items.currentMount,preferences.background");
+  // - Get present equipment info (to be able to unequip if needed)
+  const response = api_getUserInfo("items.gear.equipped");
   const respHeaders = response.getAllHeaders();
   const remainingReq = Number(respHeaders["x-ratelimit-remaining"]);
   const resetDateTime = new Date(respHeaders["x-ratelimit-reset"]);
@@ -299,17 +273,14 @@ function doLoadButtonActions(taskNotes) {
     sanitizeItemValues();
     
     // Increment requestsNeededCodePath2 when old item is different from new item, i.e. api_changeItem() will use the API to change the item
-    requestsNeededCodePath2 += (user.items.gear.costume.weapon != scriptProperties.getProperty(weaponKey));
-    requestsNeededCodePath2 += (user.items.gear.costume.shield != scriptProperties.getProperty(shieldKey));
-    requestsNeededCodePath2 += (user.items.gear.costume.head != scriptProperties.getProperty(headKey));
-    requestsNeededCodePath2 += (user.items.gear.costume.armor != scriptProperties.getProperty(armorKey));
-    requestsNeededCodePath2 += (user.items.gear.costume.headAccessory != scriptProperties.getProperty(headAccessoryKey));
-    requestsNeededCodePath2 += (user.items.gear.costume.eyewear != scriptProperties.getProperty(eyewearKey));
-    requestsNeededCodePath2 += (user.items.gear.costume.body != scriptProperties.getProperty(bodyKey));
-    requestsNeededCodePath2 += (user.items.gear.costume.back != scriptProperties.getProperty(backKey));
-    requestsNeededCodePath2 += (user.preferences.background != scriptProperties.getProperty(backgroundKey));
-    requestsNeededCodePath2 += (user.items.currentPet != scriptProperties.getProperty(currentPetKey));
-    requestsNeededCodePath2 += (user.items.currentMount != scriptProperties.getProperty(currentMountKey));
+    requestsNeededCodePath2 += (user.items.gear.equipped.weapon != scriptProperties.getProperty(weaponKey));
+    requestsNeededCodePath2 += (user.items.gear.equipped.shield != scriptProperties.getProperty(shieldKey));
+    requestsNeededCodePath2 += (user.items.gear.equipped.head != scriptProperties.getProperty(headKey));
+    requestsNeededCodePath2 += (user.items.gear.equipped.armor != scriptProperties.getProperty(armorKey));
+    requestsNeededCodePath2 += (user.items.gear.equipped.headAccessory != scriptProperties.getProperty(headAccessoryKey));
+    requestsNeededCodePath2 += (user.items.gear.equipped.eyewear != scriptProperties.getProperty(eyewearKey));
+    requestsNeededCodePath2 += (user.items.gear.equipped.body != scriptProperties.getProperty(bodyKey));
+    requestsNeededCodePath2 += (user.items.gear.equipped.back != scriptProperties.getProperty(backKey));
     
     const requestsNeeded = Math.max(requestsNeededCodePath1, requestsNeededCodePath2);
     
@@ -326,21 +297,18 @@ function doLoadButtonActions(taskNotes) {
       }
       
       if (scriptProperties.getProperty(weaponKey) == null) {
-        api_sendPrivateMessage("Save an appearance first before trying to load it! :P", USER_ID);
+        api_sendPrivateMessage("Save an equipment set first before trying to load it! :P", USER_ID);
       }
       else {
-        // Wear appearance N
-        api_changeItem("equip/costume/", user.items.gear.costume.weapon, scriptProperties.getProperty(weaponKey), "weapon_base_0");
-        api_changeItem("equip/costume/", user.items.gear.costume.shield, scriptProperties.getProperty(shieldKey), "shield_base_0");
-        api_changeItem("equip/costume/", user.items.gear.costume.head, scriptProperties.getProperty(headKey), "head_base_0");
-        api_changeItem("equip/costume/", user.items.gear.costume.armor, scriptProperties.getProperty(armorKey), "armor_base_0");
-        api_changeItem("equip/costume/", user.items.gear.costume.headAccessory, scriptProperties.getProperty(headAccessoryKey), "headAccessory_base_0");
-        api_changeItem("equip/costume/", user.items.gear.costume.eyewear, scriptProperties.getProperty(eyewearKey), "eyewear_base_0");
-        api_changeItem("equip/costume/", user.items.gear.costume.body, scriptProperties.getProperty(bodyKey), "body_base_0");
-        api_changeItem("equip/costume/", user.items.gear.costume.back, scriptProperties.getProperty(backKey), "back_base_0");
-        api_changeItem("", user.preferences.background, scriptProperties.getProperty(backgroundKey), "background_base_0");
-        api_changeItem("equip/pet/", user.items.currentPet, scriptProperties.getProperty(currentPetKey), "currentPet_base_0");
-        api_changeItem("equip/mount/", user.items.currentMount, scriptProperties.getProperty(currentMountKey), "currentMount_base_0");
+        // Wear equipment set N
+        api_changeItem("equip/equipped/", user.items.gear.equipped.weapon, scriptProperties.getProperty(weaponKey), "weapon_base_0");
+        api_changeItem("equip/equipped/", user.items.gear.equipped.shield, scriptProperties.getProperty(shieldKey), "shield_base_0");
+        api_changeItem("equip/equipped/", user.items.gear.equipped.head, scriptProperties.getProperty(headKey), "head_base_0");
+        api_changeItem("equip/equipped/", user.items.gear.equipped.armor, scriptProperties.getProperty(armorKey), "armor_base_0");
+        api_changeItem("equip/equipped/", user.items.gear.equipped.headAccessory, scriptProperties.getProperty(headAccessoryKey), "headAccessory_base_0");
+        api_changeItem("equip/equipped/", user.items.gear.equipped.eyewear, scriptProperties.getProperty(eyewearKey), "eyewear_base_0");
+        api_changeItem("equip/equipped/", user.items.gear.equipped.body, scriptProperties.getProperty(bodyKey), "body_base_0");
+        api_changeItem("equip/equipped/", user.items.gear.equipped.back, scriptProperties.getProperty(backKey), "back_base_0");
         
         // Send confirmation PM if enabled
         if (ENABLE_NOTIFICATION) {
@@ -370,17 +338,14 @@ function api_getUserInfo(userFields) {
 
 function sanitizeItemValues() {
   // Sanitize to simplify comparisons later
-  if ((user.items.gear.costume.weapon        == undefined) || (user.items.gear.costume.weapon        == "") || (user.items.gear.costume.weapon        == null)) user.items.gear.costume.weapon        = "weapon_base_0";
-  if ((user.items.gear.costume.shield        == undefined) || (user.items.gear.costume.shield        == "") || (user.items.gear.costume.shield        == null)) user.items.gear.costume.shield        = "shield_base_0";
-  if ((user.items.gear.costume.head          == undefined) || (user.items.gear.costume.head          == "") || (user.items.gear.costume.head          == null)) user.items.gear.costume.head          = "head_base_0";
-  if ((user.items.gear.costume.armor         == undefined) || (user.items.gear.costume.armor         == "") || (user.items.gear.costume.armor         == null)) user.items.gear.costume.armor         = "armor_base_0";
-  if ((user.items.gear.costume.headAccessory == undefined) || (user.items.gear.costume.headAccessory == "") || (user.items.gear.costume.headAccessory == null)) user.items.gear.costume.headAccessory = "headAccessory_base_0";
-  if ((user.items.gear.costume.eyewear       == undefined) || (user.items.gear.costume.eyewear       == "") || (user.items.gear.costume.eyewear       == null)) user.items.gear.costume.eyewear       = "eyewear_base_0";
-  if ((user.items.gear.costume.body          == undefined) || (user.items.gear.costume.body          == "") || (user.items.gear.costume.body          == null)) user.items.gear.costume.body          = "body_base_0";
-  if ((user.items.gear.costume.back          == undefined) || (user.items.gear.costume.back          == "") || (user.items.gear.costume.back          == null)) user.items.gear.costume.back          = "back_base_0";
-  if ((user.preferences.background           == undefined) || (user.preferences.background           == "") || (user.preferences.background           == null)) user.preferences.background           = "background_base_0";
-  if ((user.items.currentPet                 == undefined) || (user.items.currentPet                 == "") || (user.items.currentPet                 == null)) user.items.currentPet                 = "currentPet_base_0";
-  if ((user.items.currentMount               == undefined) || (user.items.currentMount               == "") || (user.items.currentMount               == null)) user.items.currentMount               = "currentMount_base_0";
+  if ((user.items.gear.equipped.weapon        == undefined) || (user.items.gear.equipped.weapon        == "") || (user.items.gear.equipped.weapon        == null)) user.items.gear.equipped.weapon        = "weapon_base_0";
+  if ((user.items.gear.equipped.shield        == undefined) || (user.items.gear.equipped.shield        == "") || (user.items.gear.equipped.shield        == null)) user.items.gear.equipped.shield        = "shield_base_0";
+  if ((user.items.gear.equipped.head          == undefined) || (user.items.gear.equipped.head          == "") || (user.items.gear.equipped.head          == null)) user.items.gear.equipped.head          = "head_base_0";
+  if ((user.items.gear.equipped.armor         == undefined) || (user.items.gear.equipped.armor         == "") || (user.items.gear.equipped.armor         == null)) user.items.gear.equipped.armor         = "armor_base_0";
+  if ((user.items.gear.equipped.headAccessory == undefined) || (user.items.gear.equipped.headAccessory == "") || (user.items.gear.equipped.headAccessory == null)) user.items.gear.equipped.headAccessory = "headAccessory_base_0";
+  if ((user.items.gear.equipped.eyewear       == undefined) || (user.items.gear.equipped.eyewear       == "") || (user.items.gear.equipped.eyewear       == null)) user.items.gear.equipped.eyewear       = "eyewear_base_0";
+  if ((user.items.gear.equipped.body          == undefined) || (user.items.gear.equipped.body          == "") || (user.items.gear.equipped.body          == null)) user.items.gear.equipped.body          = "body_base_0";
+  if ((user.items.gear.equipped.back          == undefined) || (user.items.gear.equipped.back          == "") || (user.items.gear.equipped.back          == null)) user.items.gear.equipped.back          = "back_base_0";
 }
 
 function getItemListString() {
@@ -391,10 +356,7 @@ function getItemListString() {
          "  \n• headAccessory = " + scriptProperties.getProperty(headAccessoryKey) +
          "  \n• eyewear = " + scriptProperties.getProperty(eyewearKey) +
          "  \n• body = " + scriptProperties.getProperty(bodyKey) +
-         "  \n• back = " + scriptProperties.getProperty(backKey) +
-         "  \n• background = " + scriptProperties.getProperty(backgroundKey) +
-         "  \n• currentPet = " + scriptProperties.getProperty(currentPetKey) +
-         "  \n• currentMount = " + scriptProperties.getProperty(currentMountKey);
+         "  \n• back = " + scriptProperties.getProperty(backKey);
 }
 
 function api_sendPrivateMessage(message, toUserId) {
@@ -442,12 +404,7 @@ function api_changeItem(itemType, oldItem, newItem, noEquipStr) {
       "muteHttpExceptions" : true,
     }
     
-    if (itemType == "") { // if background
-      var url = "https://habitica.com/api/v3/user/unlock?path=background.";
-    }
-    else {
-      var url = "https://habitica.com/api/v3/user/" + itemType;
-    }
+    var url = "https://habitica.com/api/v3/user/" + itemType;
 
     // If newItem == noEquipStr, need to unequip
     if (newItem == noEquipStr) {
